@@ -1,0 +1,2 @@
+- trainer.kwargs.accelerator=null
+- trainer.kwargs.gpus=1

@@ -1,0 +1,6 @@
+- trainer.kwargs.accelerator=null
+- trainer.kwargs.gpus=1
+- trainer.kwargs.max_epochs=1
+- trainer.kwargs.limit_train_batches=1
+- trainer.kwargs.val_check_interval=1
+- trainer.kwargs.num_sanity_val_steps=0

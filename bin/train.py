@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @handle_ddp_subprocess()
-@hydra.main(config_path='../configs/training', config_name='tiny_test.yaml')
+@hydra.main(config_path='../configs/training', config_name='my_lama.yaml')#tiny_test.yaml
 def main(config: OmegaConf):
     try:
         need_set_deterministic = handle_deterministic_config(config)

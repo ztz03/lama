@@ -20,8 +20,8 @@ losses:
   feature_matching:
     weight: 100
   resnet_pl:
-    weight: 30
-    weights_path: ${env:TORCH_HOME}
+    weight: 0
+    weights_path: ${location.pretrained_models}
 
 generator:
   kind: ffc_resnet
@@ -51,5 +51,5 @@ defaults:
   - optimizers: default_optimizers
   - visualizer: directory
   - evaluator: default_inpainted
-  - trainer: any_gpu_large_ssim_ddp_final
+  - trainer: any_gpu_large_ssim_ddp_final_celeba
   - hydra: overrides

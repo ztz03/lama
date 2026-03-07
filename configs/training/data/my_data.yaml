@@ -1,11 +1,11 @@
 # @package _group_
 
-batch_size: 10
-val_batch_size: 2
-num_workers: 3
+batch_size: 2
+val_batch_size: 1
+num_workers: 0
 
 train:
-  indir: ${location.data_root_dir}/train   #这个意思就是在location.my_location.yaml里定义的data_root_dir路径下的train文件夹
+  indir: ${location.data_root_dir}
   out_size: 256
   mask_gen_kwargs:  # probabilities do not need to sum to 1, they are re-normalized in mask generator
     irregular_proba: 1
@@ -33,8 +33,13 @@ train:
     num_workers: ${data.num_workers}
 
 val:
-  indir: ${location.data_root_dir}/val
-  img_suffix: .png
+  kind: online
+  indir: ${location.data_root_dir}
+  img_suffix: .jpg
+  out_size: 256
+  transform_variant: no_augs
+  mask_generator_kind: mixed
+  mask_gen_kwargs: ${data.train.mask_gen_kwargs}
   dataloader_kwargs:
     batch_size: ${data.val_batch_size}
     shuffle: False
@@ -98,11 +103,4 @@ val:
 #      shuffle: False
 #      num_workers: ${data.num_workers}
 
-visual_test:
-  indir: ${location.data_root_dir}/visual_test
-  img_suffix: .png
-  pad_out_to_modulo: 32
-  dataloader_kwargs:
-    batch_size: 1
-    shuffle: False
-    num_workers: ${data.num_workers}
+visual_test: null
