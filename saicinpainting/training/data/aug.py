@@ -1,3 +1,7 @@
+'''
+实现图像修复专用的数据增强逻辑，核心是图像 - 掩码同步增强（避免修复区域错位），包括随机裁剪、翻转、色彩抖动、归一化等，提升模型泛化能力。
+'''
+
 from albumentations import DualIAATransform, to_tuple
 import imgaug.augmenters as iaa
 

@@ -1,3 +1,7 @@
+'''
+定义自定义数据集类(基于 PyTorch Dataset)，负责加载图像 / 掩码、解析数据集结构、结合增强逻辑生成训练用张量，是数据加载的核心。
+'''
+
 import glob
 import logging
 import os
@@ -22,17 +26,25 @@ from saicinpainting.training.data.masks import get_mask_generator
 LOGGER = logging.getLogger(__name__)
 
 
-class InpaintingTrainDataset(Dataset):
-    def __init__(self, indir, mask_generator, transform):
+class InpaintingTrainDataset(Dataset):    #从本地文件夹读取图片，生成训练数据
+    def __init__(self, indir, mask_generator, transform):#初始化：找到所有 .jpg 图片
         self.in_files = list(glob.glob(os.path.join(indir, '**', '*.jpg'), recursive=True))
         self.mask_generator = mask_generator
         self.transform = transform
         self.iter_i = 0
 
-    def __len__(self):
+    def __len__(self):#返回数据集大小
         return len(self.in_files)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item):#取一张图片并处理
+        '''
+        1. 读取图片 (cv2.imread)
+        2. BGR → RGB 格式转换
+        3. 数据增强 (旋转/缩放等)
+        4. 转换维度 (H,W,C) → (C,H,W)
+        5. 生成随机掩码 (要修复的区域)
+        6. 返回: 图片 + 掩码
+        '''
         path = self.in_files[item]
         img = cv2.imread(path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -45,7 +57,7 @@ class InpaintingTrainDataset(Dataset):
                     mask=mask)
 
 
-class InpaintingTrainWebDataset(IterableDataset):
+class InpaintingTrainWebDataset(IterableDataset):#从网络/云存储读取图片（WebDataset 格式）
     def __init__(self, indir, mask_generator, transform, shuffle_buffer=200):
         self.impl = webdataset.Dataset(indir).shuffle(shuffle_buffer).decode('rgb').to_tuple('jpg')
         self.mask_generator = mask_generator
@@ -98,12 +110,18 @@ class ImgSegmentationDataset(Dataset):
         return ohe.permute(2, 0, 1).float(), tensor.unsqueeze(0)
 
 
-def get_transforms(transform_variant, out_size):
+def get_transforms(transform_variant, out_size):#根据名称返回不同的数据增强策略，如果名称是default，则执行下列操作
+    '''
+    default	缩放、裁剪、翻转、亮度调整	通用训练
+    distortions	透视变换、仿射变换、光学畸变	更强的数据增强，适合小数据集
+    distortions_light	轻度变换		避免过度增强
+    no_augs	仅归一化	调试/测试用
+    '''
     if transform_variant == 'default':
         transform = A.Compose([
-            A.RandomScale(scale_limit=0.2),  # +/- 20%
+            A.RandomScale(scale_limit=0.2),  # +/- 20% # 随机缩放 ±20%
             A.PadIfNeeded(min_height=out_size, min_width=out_size),
-            A.RandomCrop(height=out_size, width=out_size),
+            A.RandomCrop(height=out_size, width=out_size),# 裁剪到 512x512
             A.HorizontalFlip(),
             A.CLAHE(),
             A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2),
@@ -205,6 +223,13 @@ def get_transforms(transform_variant, out_size):
 
 def make_default_train_dataloader(indir, kind='default', out_size=512, mask_gen_kwargs=None, transform_variant='default',
                                   mask_generator_kind="mixed", dataloader_kwargs=None, ddp_kwargs=None, **kwargs):
+    #一站式创建数据加载器（Dataset + DataLoader）
+    '''    
+    1. 获取掩码生成器 (get_mask_generator)
+    2. 获取数据增强策略 (get_transforms)
+    3. 根据 kind 创建对应的 Dataset
+    4. 配置 DataLoader (batch_size, 多进程等)
+    5. 返回可迭代的数据加载器'''
     LOGGER.info(f'Make train dataloader {kind} from {indir}. Using mask generator={mask_generator_kind}')
 
     mask_generator = get_mask_generator(kind=mask_generator_kind, kwargs=mask_gen_kwargs)
